@@ -6,6 +6,9 @@
 
 Conceptual diagram (simplified):
 
+
+![AWS EKS Architecture](AWS cloud architecture..png)
+
 ```mermaid
 flowchart LR
   U[Users / Tenants] --> CF[CloudFront + WAF]
