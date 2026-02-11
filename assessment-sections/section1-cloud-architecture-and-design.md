@@ -6,57 +6,50 @@
 
 Conceptual diagram (simplified):
 
-
+```mermaid
 flowchart LR
-
-U[Users / Tenants] --> CF[CloudFront + AWS WAF]
-CF --> ALB[Application Load Balancer]
-
-subgraph VPC["Production VPC"]
-
-  subgraph Public["Public Subnets (Multi-AZ)"]
-    IGW[Internet Gateway]
-    ALB
-    NAT[NAT Gateway (per AZ)]
-  end
-
-  subgraph Private["Private Subnets - EKS"]
-    INGRESS["EKS Ingress Controller"]
-    EKS[EKS Cluster]
-    PODS[Services / Pods]
-  end
-
-  subgraph Data["Data Subnets (Isolated)"]
-    RDS[(RDS / Aurora - Multi-AZ)]
-    REDIS[(ElastiCache - Redis)]
-    S3["S3 Buckets + KMS"]
-  end
-
-end
-
-ALB --> INGRESS
-INGRESS --> EKS
-EKS --> PODS
-
-PODS --> RDS
-PODS --> REDIS
-PODS --> S3
-
-subgraph Observability["Observability & Monitoring"]
-  CW[CloudWatch]
-  PROM[Prometheus]
-  GRAF[Grafana]
-  LOGS["CloudWatch Logs / Loki"]
-end
-
-EKS --> PROM
-EKS --> LOGS
-PROM --> GRAF
-
-BACKUP["AWS Backup"] --> RDS
-BACKUP --> S3
-
+  U[Users / Tenants] --> CF[CloudFront + WAF]
+  CF --> ALB[Public ALB]
+  ALB --> INGRESS[Ingress Controller (EKS)]
   
+  subgraph VPC[App VPC]
+    IGW[Internet Gateway]
+    NAT[NAT Gateways (per AZ)]
+    IGW <---> PublicSubnets
+    NAT <---> PrivateSubnets
+
+    subgraph PublicSubnets[Public Subnets]
+      ALB
+    end
+
+    subgraph PrivateSubnets[Private Subnets - EKS Node Groups]
+      EKS[EKS Cluster]
+      EKS --> SVC[Services / Pods]
+    end
+
+    subgraph DataSubnets[Data Subnets]
+      RDS[(RDS/Aurora)]
+      Redis[(ElastiCache)]
+      S3Buckets[(S3 w/ KMS)]
+    end
+  end
+
+  EKS --> RDS
+  EKS --> Redis
+  EKS --> S3Buckets
+
+  subgraph Observability
+    CW[CloudWatch]
+    PM[Prometheus]
+    GF[Grafana]
+    LG[Loki / CloudWatch Logs]
+  end
+
+  EKS --> PM
+  EKS --> LG
+  AWSBackup[(AWS Backup)] --> RDS
+  AWSBackup --> S3Buckets
+```
 
 #### 1.2 Networking
 
